@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlazeLink</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: Arial, sans-serif;
+      color: rgb(255, 255, 255);
+      position: relative;
+      height: 100vh;
+    }
+
+    /* Particle Canvas */
+    #particleCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;  /* Ensure canvas is behind the profile */
+    }
+
+    /* Profile container styles */
+    .profile-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 20px 30px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
+      z-index: 1;
+      width: 523px;
+      height: auto;
+    }
+
+    .profile-container img {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    /* Green dot for online status */
+    .green-dot {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      width: 20px;
+      height: 20px;
+      background-color: #337bbe;
+      border-radius: 50%;
+      border: 2px solid #000;
+    }
+
+    .discord-name {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    .bio {
+      font-size: 14px;
+      margin: 20px 0;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+      position: relative;
+    }
+
+    .links a {
+      font-size: 36px;
+      color: #32809e;
+      text-decoration: none;
+      position: relative;
+    }
+
+    .links a:hover {
+      color: #1d4366;
+    }
+
+    /* Tooltip styles */
+    .tooltip {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333;
+      color: white;
+      padding: 5px;
+      border-radius: 5px;
+      font-size: 12px;
+      transition: opacity 0.3s;
+    }
+
+    .links a:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Eye icon styling */
+    .eye-icon {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      font-size: 18px;
+      color: white;
+      cursor: pointer;
+    }
+
+    .eye-icon:hover {
+      color: #00b0f4;
+    }
+
+    .eye-count {
+      font-size: 14px;
+      color: white;
+      margin-left: 5px;
+    }
+
+    .eye-tooltip {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      bottom: 30px;
+      left: -5px;
+      background-color: #333;
+      color: rgb(58, 129, 151);
+      padding: 5px;
+      border-radius: 5px;
+      font-size: 12px;
+      transition: opacity 0.3s;
+    }
+
+    .eye-icon:hover .eye-tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Particle Network -->
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- Profile Container -->
+  <div class="profile-container">
+    <img src="https://cdn.discordapp.com/avatars/932211501387907092/cf69a4916a7c9ada1695ba57d63f7afa.png?size=1024" alt="Discord Profile Picture">
+    <div class="green-dot"></div>  <!-- Green dot for online status -->
+    <div class="discord-name">benjamini13</div>
+
+    <div class="bio">
+      Exposive Man
+    </div>
+
+    <div class="links">
+      <a href="https://discord.gg/eTXaNvbDGs" target="_blank">
+        <i class="fab fa-discord"></i>
+        <span class="tooltip">Discord</span>
+      </a>
+      <a href="https://www.paypal.com/donate/?hosted_button_id=5X563M4FSYQX4" target="_blank">
+        <i class="fab fa-paypal"></i>
+        <span class="tooltip">PayPal</span>
+      </a>
+      <a href="https://github.com/your-username" target="_blank">
+        <i class="fab fa-github"></i>
+        <span class="tooltip">GitHub</span>
+      </a>
+      <a href="https://soundcloud.com/your-username" target="_blank">
+        <i class="fab fa-soundcloud"></i>
+        <span class="tooltip">SoundCloud</span>
+      </a>
+      <a href="https://open.spotify.com/user/your-username" target="_blank">
+        <i class="fab fa-spotify"></i>
+        <span class="tooltip">Spotify</span>
+      </a>
+    </div>
+
+    <!-- Eye Icon and View Counter -->
+    <div class="eye-icon">
+      <i class="fas fa-eye"></i>
+      <span class="eye-count" id="viewCount">10000</span>
+      <div class="eye-tooltip">Profile Views</div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Particles.js with updated settings
+    const canvas = document.getElementById("particleCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Set canvas resolution to 4K
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const particleCount = 200; // Number of particles
+    const maxLineDistance = 150; // Max distance to connect particles
+
+    // Adjust canvas for high DPI screens
+    const scaleFactor = window.devicePixelRatio || 1;
+    canvas.width *= scaleFactor;
+    canvas.height *= scaleFactor;
+    ctx.scale(scaleFactor, scaleFactor);
+
+    // Particle class
+    class Particle {
+      constructor(x, y, dx, dy, size, color) {
+        this.x = x;
+        this.y = y;
+        this.dx = dx;
+        this.dy = dy;
+        this.size = size;
+        this.color = color;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+      }
+
+      update() {
+        if (this.x + this.size > window.innerWidth || this.x - this.size < 0) {
+          this.dx = -this.dx;
+        }
+        if (this.y + this.size > window.innerHeight || this.y - this.size < 0) {
+          this.dy = -this.dy;
+        }
+        this.x += this.dx;
+        this.y += this.dy;
+        this.draw();
+      }
+    }
+
+    // Create particles
+    function initParticles() {
+      particles.length = 0; // Clear any existing particles
+      for (let i = 0; i < particleCount; i++) {
+        const size = Math.random() * 2 + 1;
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const dx = (Math.random() - 0.5) * 2;
+        const dy = (Math.random() - 0.5) * 2;
+        const color = "rgba(255, 255, 255, 0.8)";
+        particles.push(new Particle(x, y, dx, dy, size, color));
+      }
+    }
+
+    // Draw lines between nearby particles
+    function connectParticles() {
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance < maxLineDistance) {
+            const opacity = 1 - distance / maxLineDistance;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // Animation loop
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((particle) => particle.update());
+      connectParticles();
+      requestAnimationFrame(animate);
+    }
+
+    // Resize canvas dynamically
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initParticles();
+    });
+
+    // Initialize particles and start animation
+    initParticles();
+    animate();
+
+    // View counter
+    const viewCountElement = document.getElementById("viewCount");
+
+    // Check if the user has visited the page before
+    if (!localStorage.getItem("hasVisited")) {
+      // If not, mark as visited and increment the view count
+      localStorage.setItem("hasVisited", "true");
+
+      // Retrieve and increment view count from localStorage
+      let viewCount = parseInt(localStorage.getItem("viewCount")) || 0;
+      viewCount += 1;
+
+      // Update the view count in localStorage
+      localStorage.setItem("viewCount", viewCount);
+    }
+
+    // Get the current view count and display it
+    const viewCount = localStorage.getItem("viewCount");
+    viewCountElement.textContent = viewCount;
+
+  </script>
+
+</body>
+</html>
